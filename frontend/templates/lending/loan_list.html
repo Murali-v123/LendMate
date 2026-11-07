@@ -1,0 +1,323 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Loans | LendMate{% endblock %}
+
+{% block content %}
+
+<style>
+    .loan-page {
+        padding: 30px 0;
+        color: #30251F;
+    }
+
+    .loan-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    .loan-header h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.2rem;
+        margin-bottom: 6px;
+    }
+
+    .loan-header p {
+        color: #88796E;
+        margin: 0;
+    }
+
+    .add-loan-btn {
+        background: #9C5B43;
+        color: white;
+        padding: 11px 20px;
+        border-radius: 7px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+
+    .add-loan-btn:hover {
+        background: #75412F;
+        color: white;
+    }
+
+    .loan-card {
+        background: #FFFCF7;
+        border: 1px solid #E9DED0;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(60, 40, 25, 0.05);
+    }
+
+    .loan-card-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #E9DED0;
+    }
+
+    .loan-card-header h5 {
+        font-family: 'Playfair Display', serif;
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .loan-table {
+        width: 100%;
+        min-width: 1100px;
+        border-collapse: collapse;
+    }
+
+    .loan-table th {
+        background: #F4EDE3;
+        color: #756357;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        padding: 15px 16px;
+        white-space: nowrap;
+    }
+
+    .loan-table td {
+        padding: 17px 16px;
+        border-bottom: 1px solid #F0E8DE;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    .loan-table tbody tr:hover {
+        background: #FAF5EE;
+    }
+
+    .borrower-name {
+        font-weight: 600;
+        color: #49372D;
+    }
+
+    .loan-id {
+        font-size: 12px;
+        color: #927C6D;
+    }
+
+    .loan-amount {
+        font-weight: 700;
+        color: #49372D;
+        white-space: nowrap;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-open {
+        background: #E5F2E9;
+        color: #32734A;
+    }
+
+    .status-closed {
+        background: #F1E8E4;
+        color: #8A5946;
+    }
+
+    .view-btn {
+        display: inline-block;
+        padding: 7px 13px;
+        border: 1px solid #B77A60;
+        border-radius: 6px;
+        color: #9C5B43;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .view-btn:hover {
+        background: #9C5B43;
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 65px 20px;
+    }
+
+    .empty-state h4 {
+        font-family: 'Playfair Display', serif;
+        margin-bottom: 10px;
+    }
+
+    .empty-state p {
+        color: #88796E;
+    }
+
+    @media (max-width: 768px) {
+        .loan-page {
+            padding: 20px 0;
+        }
+
+        .loan-header h1 {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+
+<div class="container loan-page">
+
+    <!-- Page Header -->
+    <div class="loan-header">
+
+        <div>
+            <h1>Loan Portfolio</h1>
+            <p>Manage and monitor all your lending records.</p>
+        </div>
+
+        <a href="{% url 'lending:add_loan' %}" class="add-loan-btn">
+            + Add New Loan
+        </a>
+
+    </div>
+
+
+    <!-- Loan Table Card -->
+    <div class="loan-card">
+
+        <div class="loan-card-header">
+            <h5>All Loans</h5>
+        </div>
+
+        {% if loans %}
+
+        <div class="table-responsive">
+
+            <table class="loan-table">
+
+                <thead>
+                    <tr>
+                        <th>Loan ID</th>
+                        <th>Borrower</th>
+                        <th>Principal</th>
+                        <th>Interest Rate</th>
+                        <th>Interest Period</th>
+                        <th>Calculation Method</th>
+                        <th>Lending Date</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for loan in loans %}
+
+                    <tr>
+
+                        <td>
+                            <span class="loan-id">
+                                {{ loan.loan_id|truncatechars:13 }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="borrower-name">
+                                {{ loan.borrower.full_name }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="loan-amount">
+                                ₹{{ loan.principal|floatformat:2 }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {{ loan.interest_rate }}%
+                        </td>
+
+                        <td>
+                            {{ loan.get_interest_period_display }}
+                        </td>
+
+                        <td>
+                            {{ loan.get_interest_basis_display }}
+                        </td>
+
+                        <td>
+                            {{ loan.lending_date|date:"d M Y" }}
+                        </td>
+
+                        <td>
+                            {% if loan.due_date %}
+                            {{ loan.due_date|date:"d M Y" }}
+                            {% else %}
+                            <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+
+                            {% if loan.status == "open" %}
+
+                            <span class="status-badge status-open">
+                                Open
+                            </span>
+
+                            {% else %}
+
+                            <span class="status-badge status-closed">
+                                Closed
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            <span class="text-muted"><a href="{% url 'lending:loan_detail' loan.loan_id %}"
+                                    class="text-decoration-none">
+                                    View Details →
+                                </a></span>
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-state">
+
+            <h4>No Loans Yet</h4>
+
+            <p>Your loan records will appear here once you create them.</p>
+
+            <a href="{% url 'lending:add_loan' %}" class="add-loan-btn">
+                Create Your First Loan
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

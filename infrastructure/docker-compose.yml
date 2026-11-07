@@ -1,0 +1,185 @@
+# Docker Compose for LendMate (Production & Deployment Stack)
+# Mirrored copy of root docker-compose.yml with 'build: ..' context.
+
+services:
+  # --- MySQL Database Service ---
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set in .env}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-lendmate}"
+      MYSQL_USER: "${MYSQL_USER:-lendmate}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}"
+    networks:
+      - lendmate-network
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u $${MYSQL_USER:-lendmate} -p$${MYSQL_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --- Redis Cache & Broker Service ---
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - lendmate-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Database Migration Service (Controlled Release Step) ---
+  migrate:
+    build: ..
+    command: python manage.py migrate --noinput
+    restart: "no"
+    profiles:
+      - tools
+    environment:
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY must be set in .env}"
+      DJANGO_DEBUG: "${DJANGO_DEBUG:-false}"
+      DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,web}"
+      DJANGO_TIME_ZONE: "${DJANGO_TIME_ZONE:-Asia/Kolkata}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-lendmate}"
+      MYSQL_USER: "${MYSQL_USER:-lendmate}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_SSL_CA: "${MYSQL_SSL_CA:-}"
+      MYSQL_SSL_MODE: "${MYSQL_SSL_MODE:-}"
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    networks:
+      - lendmate-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # --- Django Web Application Service ---
+  web:
+    build: ..
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY must be set in .env}"
+      DJANGO_DEBUG: "${DJANGO_DEBUG:-false}"
+      DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,web}"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "${DJANGO_CSRF_TRUSTED_ORIGINS:-}"
+      DJANGO_TIME_ZONE: "${DJANGO_TIME_ZONE:-Asia/Kolkata}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-lendmate}"
+      MYSQL_USER: "${MYSQL_USER:-lendmate}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_SSL_CA: "${MYSQL_SSL_CA:-}"
+      MYSQL_SSL_MODE: "${MYSQL_SSL_MODE:-}"
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      WHATSAPP_BACKEND: "${WHATSAPP_BACKEND:-notifications.whatsapp.MockWhatsAppBackend}"
+      WHATSAPP_ACCESS_TOKEN: "${WHATSAPP_ACCESS_TOKEN:-}"
+      WHATSAPP_PHONE_NUMBER_ID: "${WHATSAPP_PHONE_NUMBER_ID:-}"
+      WHATSAPP_BUSINESS_ACCOUNT_ID: "${WHATSAPP_BUSINESS_ACCOUNT_ID:-}"
+      WHATSAPP_API_VERSION: "${WHATSAPP_API_VERSION:-v20.0}"
+      WHATSAPP_VERIFY_TOKEN: "${WHATSAPP_VERIFY_TOKEN:-}"
+      WHATSAPP_APP_SECRET: "${WHATSAPP_APP_SECRET:-}"
+      EMAIL_BACKEND: "${EMAIL_BACKEND:-django.core.mail.backends.console.EmailBackend}"
+      DEFAULT_FROM_EMAIL: "${DEFAULT_FROM_EMAIL:-LendMate <no-reply@lendmate.local>}"
+      EMAIL_HOST: "${EMAIL_HOST:-localhost}"
+      EMAIL_PORT: "${EMAIL_PORT:-587}"
+      EMAIL_USE_TLS: "${EMAIL_USE_TLS:-true}"
+      EMAIL_HOST_USER: "${EMAIL_HOST_USER:-}"
+      EMAIL_HOST_PASSWORD: "${EMAIL_HOST_PASSWORD:-}"
+    networks:
+      - lendmate-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Celery Asynchronous Worker Service ---
+  celery-worker:
+    build: ..
+    command: celery -A config worker --loglevel=info --concurrency=2
+    restart: unless-stopped
+    environment:
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY must be set in .env}"
+      DJANGO_DEBUG: "${DJANGO_DEBUG:-false}"
+      DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,web}"
+      DJANGO_TIME_ZONE: "${DJANGO_TIME_ZONE:-Asia/Kolkata}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-lendmate}"
+      MYSQL_USER: "${MYSQL_USER:-lendmate}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_SSL_CA: "${MYSQL_SSL_CA:-}"
+      MYSQL_SSL_MODE: "${MYSQL_SSL_MODE:-}"
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      WHATSAPP_BACKEND: "${WHATSAPP_BACKEND:-notifications.whatsapp.MockWhatsAppBackend}"
+      WHATSAPP_ACCESS_TOKEN: "${WHATSAPP_ACCESS_TOKEN:-}"
+      WHATSAPP_PHONE_NUMBER_ID: "${WHATSAPP_PHONE_NUMBER_ID:-}"
+      WHATSAPP_BUSINESS_ACCOUNT_ID: "${WHATSAPP_BUSINESS_ACCOUNT_ID:-}"
+      WHATSAPP_API_VERSION: "${WHATSAPP_API_VERSION:-v20.0}"
+      WHATSAPP_VERIFY_TOKEN: "${WHATSAPP_VERIFY_TOKEN:-}"
+      WHATSAPP_APP_SECRET: "${WHATSAPP_APP_SECRET:-}"
+    networks:
+      - lendmate-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Celery Beat Task Scheduler Service ---
+  celery-beat:
+    build: ..
+    command: celery -A config beat --loglevel=info
+    restart: unless-stopped
+    environment:
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY must be set in .env}"
+      DJANGO_DEBUG: "${DJANGO_DEBUG:-false}"
+      DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,web}"
+      DJANGO_TIME_ZONE: "${DJANGO_TIME_ZONE:-Asia/Kolkata}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-lendmate}"
+      MYSQL_USER: "${MYSQL_USER:-lendmate}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_SSL_CA: "${MYSQL_SSL_CA:-}"
+      MYSQL_SSL_MODE: "${MYSQL_SSL_MODE:-}"
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      WHATSAPP_BACKEND: "${WHATSAPP_BACKEND:-notifications.whatsapp.MockWhatsAppBackend}"
+      WHATSAPP_ACCESS_TOKEN: "${WHATSAPP_ACCESS_TOKEN:-}"
+      WHATSAPP_PHONE_NUMBER_ID: "${WHATSAPP_PHONE_NUMBER_ID:-}"
+      WHATSAPP_BUSINESS_ACCOUNT_ID: "${WHATSAPP_BUSINESS_ACCOUNT_ID:-}"
+      WHATSAPP_API_VERSION: "${WHATSAPP_API_VERSION:-v20.0}"
+      WHATSAPP_VERIFY_TOKEN: "${WHATSAPP_VERIFY_TOKEN:-}"
+      WHATSAPP_APP_SECRET: "${WHATSAPP_APP_SECRET:-}"
+    networks:
+      - lendmate-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+networks:
+  lendmate-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

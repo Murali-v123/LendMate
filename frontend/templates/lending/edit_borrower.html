@@ -1,0 +1,88 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Edit Borrower · {{ borrower.full_name }} · LendMate{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <div class="mb-4">
+        <a href="{% url 'lending:borrower_detail' borrower.pk %}" class="lm-link small text-decoration-none">
+            ← Back to {{ borrower.full_name }}'s Profile
+        </a>
+        <div class="mt-2">
+            <p class="lm-eyebrow mb-1">Borrower Management</p>
+            <h1 class="lm-display mb-1">Edit Borrower</h1>
+            <p class="lm-muted mb-0">Update contact and personal details for {{ borrower.full_name }}.</p>
+        </div>
+    </div>
+
+    <div class="lm-card" style="max-width: 720px;">
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="lm-label" for="{{ form.full_name.id_for_label }}">
+                    Full name
+                </label>
+                {{ form.full_name }}
+                {% for error in form.full_name.errors %}
+                <div class="lm-field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label class="lm-label" for="{{ form.mobile_number.id_for_label }}">
+                    Mobile number
+                </label>
+                {{ form.mobile_number }}
+                {% for error in form.mobile_number.errors %}
+                <div class="lm-field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label class="lm-label" for="{{ form.email.id_for_label }}">
+                    Email address <span class="lm-muted">(Optional)</span>
+                </label>
+                {{ form.email }}
+                {% for error in form.email.errors %}
+                <div class="lm-field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label class="lm-label" for="{{ form.notes.id_for_label }}">
+                    Notes <span class="lm-muted">(Optional)</span>
+                </label>
+                {{ form.notes }}
+                {% for error in form.notes.errors %}
+                <div class="lm-field-error">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="form-check mb-4">
+                {{ form.whatsapp_consent }}
+                <label class="form-check-label fw-medium" for="{{ form.whatsapp_consent.id_for_label }}">
+                    Borrower has consented to receive WhatsApp notifications.
+                </label>
+                {% for error in form.whatsapp_consent.errors %}
+                <div class="lm-field-error">{{ error }}</div>
+                {% endfor %}
+                <div class="form-text text-muted">
+                    Required to send loan confirmations, payment receipts, and reminders via official Meta WhatsApp Business Cloud API. Consent may be revoked anytime by unchecking.
+                </div>
+            </div>
+
+            <div class="d-flex gap-3">
+                <button type="submit" class="lm-btn-primary">
+                    Save Changes
+                </button>
+                <a href="{% url 'lending:borrower_detail' borrower.pk %}" class="lm-btn-outline">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

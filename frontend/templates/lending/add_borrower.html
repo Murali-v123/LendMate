@@ -1,0 +1,83 @@
+{% extends "layouts/app.html" %}
+
+{% block content %}
+
+<div class="container-fluid px-0">
+
+    <div class="mb-4">
+        <p class="text-uppercase small text-muted mb-2">
+            LendMate / Borrowers
+        </p>
+        <h1 class="h2 mb-2">Add a borrower</h1>
+        <p class="text-muted">
+            Keep borrower details organised before creating a loan.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4" style="max-width: 720px;">
+        <div class="card-body p-4 p-md-5">
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="form-label" for="{{ form.full_name.id_for_label }}">
+                        Full name
+                    </label>
+                    {{ form.full_name }}
+                    {{ form.full_name.errors }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="{{ form.mobile_number.id_for_label }}">
+                        Mobile number
+                    </label>
+                    {{ form.mobile_number }}
+                    {{ form.mobile_number.errors }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="{{ form.email.id_for_label }}">
+                        Email address <span class="text-muted">(Optional)</span>
+                    </label>
+                    {{ form.email }}
+                    {{ form.email.errors }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label" for="{{ form.notes.id_for_label }}">
+                        Notes <span class="text-muted">(Optional)</span>
+                    </label>
+                    {{ form.notes }}
+                    {{ form.notes.errors }}
+                </div>
+
+                <div class="form-check mb-4">
+                    {{ form.whatsapp_consent }}
+                    <label class="form-check-label" for="{{ form.whatsapp_consent.id_for_label }}">
+                        Borrower has consented to receive WhatsApp notifications.
+                    </label>
+                    {{ form.whatsapp_consent.errors }}
+                    <div class="form-text text-muted">
+                        Required to send loan confirmations, payment receipts, and reminders via official Meta WhatsApp Business Cloud API.
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-dark px-4">
+                        Save borrower
+                    </button>
+
+                    <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary px-4">
+                        Cancel
+                    </a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

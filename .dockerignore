@@ -1,0 +1,51 @@
+# .dockerignore for LendMate
+# Prevent sensitive files, caches, virtual environments, and build artifacts from leaking into images
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Static collected files (generated in build step inside Docker)
+staticfiles/
+
+# Version control & IDE configs
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs
+*.log
+logs/
+
+# Database dumps and backups
+*.sql
+*.dump
+*.sqlite3
+lendmate_backup_*.sql
+
+# Local archives and temp files
+*.zip
+*.tar.gz
+*.bak
+tmp/
+scratch/

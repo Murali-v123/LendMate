@@ -1,0 +1,16 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Sign in · LendMate{% endblock %}
+{% block content %}
+<p class="lm-eyebrow">Welcome back</p>
+<h1 class="lm-heading-md">Sign in to LendMate</h1>
+<form method="post" action="{% url 'accounts:login' %}">
+  {% csrf_token %}
+  {% include "partials/form_fields.html" %}
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+  <button type="submit" class="lm-btn-primary lm-btn-block mt-2">Sign in</button>
+</form>
+<div class="d-flex justify-content-between mt-3 small">
+  <a class="lm-link" href="{% url 'accounts:password_reset' %}">Forgot password?</a>
+  <a class="lm-link" href="{% url 'accounts:register' %}">Create an account</a>
+</div>
+{% endblock %}

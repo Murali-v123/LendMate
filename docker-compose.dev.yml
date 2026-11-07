@@ -1,0 +1,15 @@
+# Docker Compose override for local development
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# This exposes MySQL and Redis to localhost (127.0.0.1) for local inspection tools
+# (e.g., MySQL Workbench, DBeaver, Redis Insight, or running Django tests outside Docker).
+
+services:
+  mysql:
+    ports:
+      - "127.0.0.1:3306:3306"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"

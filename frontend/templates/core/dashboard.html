@@ -1,0 +1,150 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}Dashboard | LendMate{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <!-- Dashboard Heading -->
+    <div class="mb-4">
+        <p class="lm-eyebrow mb-1">Overview</p>
+        <h1 class="lm-display mb-1">Your money, thoughtfully managed.</h1>
+        <p class="lm-muted mb-0">
+            A comprehensive summary of your lending activities, returns, and borrower accounts.
+        </p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6 col-xl-3">
+            <div class="lm-card h-100 p-4">
+                <p class="lm-muted small mb-2">Total Amount Lent</p>
+                <h3 class="mb-1 text-dark">
+                    ₹{{ total_lent|floatformat:2 }}
+                </h3>
+                <small class="lm-muted">Across {{ total_loans }} recorded loans</small>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="lm-card h-100 p-4">
+                <p class="lm-muted small mb-2">Outstanding Principal</p>
+                <h3 class="mb-1 {% if outstanding > 0 %}text-danger{% else %}text-muted{% endif %}">
+                    ₹{{ outstanding|floatformat:2 }}
+                </h3>
+                <small class="lm-muted">Principal remaining to be collected</small>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="lm-card h-100 p-4">
+                <p class="lm-muted small mb-2">Interest Received</p>
+                <h3 class="mb-1 text-success">
+                    ₹{{ interest_received|floatformat:2 }}
+                </h3>
+                <small class="lm-muted">Total interest earned to date</small>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="lm-card h-100 p-4">
+                <p class="lm-muted small mb-2">Loans & Borrowers</p>
+                <h3 class="mb-1 text-dark">
+                    {{ active_loans }} <span class="fs-6 text-muted">active loans</span>
+                </h3>
+                <div class="small lm-muted d-flex justify-content-between mt-1">
+                    <span>{{ total_loans }} total ({{ closed_loans }} closed)</span>
+                </div>
+                <div class="small text-muted mt-1">
+                    {{ total_borrowers }} borrowers ({{ active_borrowers }} active)
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="lm-card mb-4 p-4">
+        <h2 class="lm-heading-sm mb-3">Quick Actions</h2>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'lending:add_borrower' %}" class="lm-btn-primary">
+                + Add Borrower
+            </a>
+
+            <a href="{% url 'lending:add_loan' %}" class="lm-btn-outline">
+                + Create Loan
+            </a>
+
+            <a href="{% url 'lending:add_payment' %}" class="lm-btn-outline">
+                + Record Payment
+            </a>
+
+            <a href="{% url 'lending:borrower_list' %}" class="lm-btn-outline">
+                View Borrowers
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Payments -->
+    <div class="lm-card p-0 overflow-hidden">
+        <div class="p-4 pb-3">
+            <h2 class="lm-heading-sm mb-1">Recent Payments</h2>
+            <p class="lm-muted mb-0">Latest repayments recorded in your ledger.</p>
+        </div>
+
+        {% if recent_payments %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Borrower</th>
+                            <th>Date</th>
+                            <th class="text-end">Amount Received</th>
+                            <th class="text-end">Principal</th>
+                            <th class="text-end pe-4">Interest</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for payment in recent_payments %}
+                            <tr>
+                                <td class="ps-4 fw-medium">
+                                    <a href="{% url 'lending:borrower_detail' payment.loan.borrower.pk %}" class="text-dark text-decoration-none">
+                                        {{ payment.loan.borrower.full_name }}
+                                    </a>
+                                </td>
+
+                                <td>
+                                    {{ payment.payment_date|date:"d M Y" }}
+                                </td>
+
+                                <td class="text-end fw-semibold">
+                                    ₹{{ payment.amount|floatformat:2 }}
+                                </td>
+
+                                <td class="text-end text-success">
+                                    ₹{{ payment.principal_component|floatformat:2 }}
+                                </td>
+
+                                <td class="text-end text-primary pe-4">
+                                    ₹{{ payment.interest_component|floatformat:2 }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        {% else %}
+            <div class="p-4 text-center">
+                <p class="lm-muted mb-0">
+                    No payments recorded yet.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

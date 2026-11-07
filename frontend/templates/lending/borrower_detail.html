@@ -1,0 +1,780 @@
+{% extends "layouts/app.html" %}
+
+{% block title %}{{ borrower.full_name }} · Borrower Profile · LendMate{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+    <!-- Top Navigation / Breadcrumb -->
+    <div class="mb-3">
+        <a href="{% url 'lending:borrower_list' %}" class="lm-link small text-decoration-none">
+            ← Back to All Borrowers
+        </a>
+    </div>
+
+    <!-- Profile Header Card -->
+    <div class="lm-card mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-3">
+                    <h1 class="lm-display mb-0">{{ borrower.full_name }}</h1>
+                    {% if borrower.is_active_status %}
+                    <span class="badge bg-success-subtle text-success px-3 py-2 fs-6">Active Borrower</span>
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary px-3 py-2 fs-6">Inactive</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex flex-wrap gap-4 mt-2 lm-muted">
+                    <span><strong>Mobile:</strong> {{ borrower.mobile_number }}</span>
+                    {% if borrower.email %}
+                    <span><strong>Email:</strong> {{ borrower.email }}</span>
+                    {% endif %}
+                    <span><strong>Registered:</strong> {{ borrower.created_at|date:"d M Y" }}</span>
+                    <span>
+                        <strong>WhatsApp Consent:</strong>
+                        {% if borrower.whatsapp_consent %}
+                        <span class="text-success fw-semibold">Yes</span>
+                        {% else %}
+                        <span class="text-secondary">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% if borrower.notes %}
+                <div class="mt-3 p-3 bg-light rounded-2 border">
+                    <small class="lm-muted fw-semibold d-block mb-1">Borrower Notes:</small>
+                    <p class="mb-0 text-break">{{ borrower.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'lending:edit_borrower' borrower.pk %}" class="lm-btn-outline">
+                    Edit Borrower
+                </a>
+                <a href="{% url 'lending:add_loan' %}?borrower={{ borrower.pk }}" class="lm-btn-primary">
+                    + Add New Loan
+                </a>
+            </div>
+        </div>
+
+        <hr class="lm-divider">
+
+        <!-- Metric Stat Cards -->
+        <div class="row g-3">
+            <div class="col-sm-6 col-lg-3">
+                <div class="p-3 bg-light rounded-2 border h-100">
+                    <div class="lm-muted small mb-1">Total Borrowed</div>
+                    <div class="h4 mb-0 text-dark">₹{{ total_borrowed|floatformat:2 }}</div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="p-3 bg-light rounded-2 border h-100">
+                    <div class="lm-muted small mb-1">Outstanding Principal</div>
+                    <div class="h4 mb-0 {% if outstanding_principal > 0 %}text-danger{% else %}text-muted{% endif %}">
+                        ₹{{ outstanding_principal|floatformat:2 }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="p-3 bg-light rounded-2 border h-100">
+                    <div class="lm-muted small mb-1">Total Loans</div>
+                    <div class="h4 mb-0 text-dark">{{ total_loans }}</div>
+                    <small class="lm-muted">Recorded lifetime</small>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="p-3 bg-light rounded-2 border h-100">
+                    <div class="lm-muted small mb-1">Active vs Closed Loans</div>
+                    <div class="h4 mb-0 text-dark">{{ active_loans }} <span class="fs-6 text-muted">/ {{ closed_loans }} closed</span></div>
+                    <small class="lm-muted">{{ active_loans }} currently active</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRACKER SECTION (Custom + Automatic) -->
+    <div class="lm-card mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div>
+                <h2 class="lm-heading-sm mb-1">Custom and Automatic Trackers</h2>
+                <p class="lm-muted mb-0">Monitor loan milestones, monthly interest schedules, and borrower checklists.</p>
+            </div>
+            <button type="button" class="lm-btn-primary" data-bs-toggle="modal" data-bs-target="#createTrackerModal">
+                + Create Tracker
+            </button>
+        </div>
+
+        {% if trackers %}
+        <div class="d-flex flex-column gap-4 mt-3">
+            {% for tracker in trackers %}
+            <div class="border rounded-3 p-3 p-md-4 bg-white shadow-sm">
+                <!-- Tracker Header -->
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h4 class="h5 mb-0 text-dark">{{ tracker.title }}</h4>
+                            {% if tracker.is_automatic %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                Automatic Monthly Tracker
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border px-2 py-1">
+                                Custom Tracker
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        {% if tracker.is_automatic and tracker.loan %}
+                        <div class="small lm-muted mt-1 d-flex flex-wrap gap-3">
+                            <span>
+                                <strong>Linked Loan:</strong>
+                                <a href="{% url 'lending:loan_detail' tracker.loan.loan_id %}" class="text-decoration-none font-monospace fw-semibold text-dark">
+                                    #{{ tracker.loan.loan_id|stringformat:".8s" }}
+                                </a>
+                                (₹{{ tracker.loan.principal|floatformat:2 }})
+                            </span>
+                            <span>
+                                <strong>Timeline:</strong>
+                                {{ tracker.start_date|date:"F Y" }} – {{ tracker.end_date|date:"F Y" }}
+                            </span>
+                            <span>
+                                <strong>Loan Status:</strong>
+                                {% if tracker.loan.status == 'open' %}
+                                <span class="badge bg-success-subtle text-success">Open</span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary">Closed</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        {% if tracker.description %}
+                        <p class="lm-muted small mb-0 mt-1">{{ tracker.description }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        {% if tracker.is_automatic %}
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#extendTrackerModal-{{ tracker.id }}">
+                            Extend Tracker
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#addItemModal-{{ tracker.id }}">
+                            + Add Item
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteTrackerModal-{{ tracker.id }}" title="Delete this tracker">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress Section (Above the Horizontal Tracker) -->
+                <div class="mb-3 p-3 bg-light rounded-2">
+                    <div class="d-flex justify-content-between align-items-center small mb-2 flex-wrap gap-2">
+                        <div class="d-flex gap-3">
+                            <span>Total Items: <strong>{{ tracker.total_items_count }}</strong></span>
+                            <span class="text-success">Completed: <strong>{{ tracker.completed_items_count }}</strong></span>
+                            <span class="text-secondary">Pending: <strong>{{ tracker.pending_items_count }}</strong></span>
+                        </div>
+                        <span class="fw-semibold text-dark">Progress: {{ tracker.progress_percentage }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar {% if tracker.progress_percentage == 100 %}bg-success{% else %}bg-dark{% endif %}"
+                             role="progressbar"
+                             style="width: {{ tracker.progress_percentage }}%;"
+                             aria-valuenow="{{ tracker.progress_percentage }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Horizontal Tracker Row (Left to Right single row with horizontal scroll on all screens) -->
+                {% if tracker.items.all %}
+                <div class="lm-tracker-scroll-wrapper">
+                    <div class="lm-tracker-row">
+                        {% for item in tracker.items.all %}
+                        <div class="lm-tracker-card {% if item.is_completed %}is-completed{% endif %}">
+                            <div class="lm-tracker-card-header">
+                                <form method="post" action="{% url 'lending:toggle_tracker_item' item.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="checkbox"
+                                           class="form-check-input lm-tracker-checkbox"
+                                           {% if item.is_completed %}checked{% endif %}
+                                           onchange="this.form.submit()"
+                                           title="Mark as {% if item.is_completed %}pending{% else %}completed{% endif %}">
+                                </form>
+                                {% if item.is_completed %}
+                                <span class="lm-tracker-badge is-done">Done</span>
+                                {% else %}
+                                <span class="lm-tracker-badge is-pending">Pending</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="lm-tracker-title">
+                                {{ item.title }}
+                            </div>
+
+                            {% if item.notes %}
+                            <div class="lm-tracker-notes-preview" title="{{ item.notes }}">
+                                {{ item.notes }}
+                            </div>
+                            {% endif %}
+
+                            <div class="lm-tracker-card-footer">
+                                <span class="text-muted small">
+                                    {% if item.is_completed and item.completed_at %}
+                                    ✓ {{ item.completed_at|date:"d M" }}
+                                    {% elif item.tracking_date %}
+                                    {{ item.tracking_date|date:"M Y" }}
+                                    {% else %}
+                                    #{{ forloop.counter }}
+                                    {% endif %}
+                                </span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-link text-muted p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#editItemModal-{{ item.id }}" title="View or edit notes">
+                                        Notes
+                                    </button>
+                                    {% if tracker.is_custom %}
+                                    <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#deleteItemModal-{{ item.id }}" title="Delete item">
+                                        &times;
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal: Edit Item / Notes -->
+                        <div class="modal fade" id="editItemModal-{{ item.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'lending:edit_tracker_item' item.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Edit Item &amp; Notes</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Item / Month Title</label>
+                                                <input type="text" name="title" class="form-control" value="{{ item.title }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Notes (Optional)</label>
+                                                <textarea name="notes" class="form-control" rows="3" placeholder="Add tracking observations, reminder notes, or payment verifications...">{{ item.notes }}</textarea>
+                                            </div>
+                                            {% if item.is_completed and item.completed_at %}
+                                            <div class="small text-success">
+                                                ✓ Marked as completed on {{ item.completed_at|date:"d M Y H:i" }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="lm-btn-primary">Save Changes</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if tracker.is_custom %}
+                        <!-- Modal: Delete Custom Item -->
+                        <div class="modal fade" id="deleteItemModal-{{ item.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'lending:delete_tracker_item' item.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Confirm Item Deletion</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="mb-0">Are you sure you want to delete the checklist item <strong>"{{ item.title }}"</strong>? This action cannot be undone.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-danger">Delete Item</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="lm-muted small mb-0 py-2">
+                    No items in this tracker yet. Click "+ Add Item" above to add your first task.
+                </p>
+                {% endif %}
+            </div>
+
+            {% if tracker.is_automatic %}
+            <!-- Modal: Extend Automatic Tracker -->
+            <div class="modal fade" id="extendTrackerModal-{{ tracker.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" action="{% url 'lending:extend_tracker' tracker.id %}">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">Extend Tracker Duration</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="small text-muted mb-3">
+                                    Extend monthly tracking for <strong>{{ tracker.title }}</strong>. Additional monthly checklist entries will be appended to the right while preserving all previously recorded progress and notes.
+                                </p>
+
+                                {% if tracker.loan and tracker.loan.status == "closed" %}
+                                <div class="alert alert-warning py-2 px-3 small mb-3">
+                                    <strong>Notice:</strong> This loan is currently closed. Extending this tracker will add tracking periods without altering the closed status of the loan.
+                                </div>
+                                {% endif %}
+
+                                <div class="p-3 bg-light rounded-2 border mb-3">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="text-muted">Current Start Month:</span>
+                                        <strong>{{ tracker.start_date|date:"F Y"|default:"Not set" }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between small">
+                                        <span class="text-muted">Current End Month:</span>
+                                        <strong>{{ tracker.end_date|date:"F Y"|default:"Not set" }}</strong>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Extension Duration</label>
+                                    <select name="extension_preset" class="form-select extension-preset-select" data-target="custom-months-{{ tracker.id }}">
+                                        <option value="1" selected>Extend by 1 Month</option>
+                                        <option value="2">Extend by 2 Months</option>
+                                        <option value="3">Extend by 3 Months</option>
+                                        <option value="6">Extend by 6 Months</option>
+                                        <option value="custom">Custom Number of Months...</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3 d-none" id="custom-months-{{ tracker.id }}">
+                                    <label class="form-label">Number of Additional Months</label>
+                                    <input type="number" name="custom_months" class="form-control" placeholder="e.g. 4, 8, 12..." min="1" max="120">
+                                </div>
+
+                                {% if tracker.loan %}
+                                <div class="form-check mt-3">
+                                    <input type="checkbox" name="update_loan_due_date" id="updateLoanDueDate-{{ tracker.id }}" class="form-check-input">
+                                    <label class="form-check-label small" for="updateLoanDueDate-{{ tracker.id }}">
+                                        Also update the loan's expected return date (due date) to match the new tracker end date
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="lm-btn-primary">Confirm Extension</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if tracker.is_custom %}
+            <!-- Modal: Add Custom Item -->
+            <div class="modal fade" id="addItemModal-{{ tracker.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post" action="{% url 'lending:add_tracker_item' tracker.id %}">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add Checklist Item</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Item Title</label>
+                                    <input type="text" name="title" class="form-control" placeholder="e.g. March interest collection, Collect Aadhaar copy..." required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Notes (Optional)</label>
+                                    <textarea name="notes" class="form-control" rows="2" placeholder="Add any details, reminder dates or notes..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="lm-btn-primary">+ Add Item</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Modal: Delete Tracker Confirmation -->
+            <div class="modal fade" id="deleteTrackerModal-{{ tracker.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form method="post" action="{% url 'lending:delete_tracker' tracker.id %}">
+                            {% csrf_token %}
+                            <div class="modal-header">
+                                <h5 class="modal-title text-danger">Delete Tracker</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to delete the tracker <strong>"{{ tracker.title }}"</strong> and all its checklist entries?</p>
+                                <p class="small text-muted mb-0">Note: Deleting this tracker will not affect the borrower's loan or payment records.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-danger">Delete Tracker</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-4 bg-light rounded-3 text-center">
+            <h5 class="lm-heading-sm mb-2">No trackers created yet</h5>
+            <p class="lm-muted mb-3">
+                Create an automatic monthly tracker from an active loan or design a custom checklist for borrower follow-ups.
+            </p>
+            <button type="button" class="lm-btn-primary" data-bs-toggle="modal" data-bs-target="#createTrackerModal">
+                + Create First Tracker
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Loan History Card -->
+    <div class="lm-card mb-4 p-0 overflow-hidden">
+        <div class="p-4 pb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h2 class="lm-heading-sm mb-1">Loan History</h2>
+                <p class="lm-muted mb-0">All loans extended to {{ borrower.full_name }}.</p>
+            </div>
+            <a href="{% url 'lending:add_loan' %}?borrower={{ borrower.pk }}" class="lm-btn-primary btn-sm">
+                + Add Loan
+            </a>
+        </div>
+
+        {% if loans %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Loan ID</th>
+                        <th class="text-end">Principal</th>
+                        <th>Rate &amp; Period</th>
+                        <th>Calculation Basis</th>
+                        <th>Lending Date</th>
+                        <th>Due Date</th>
+                        <th>Monthly Due Day</th>
+                        <th class="text-end">Principal Repaid</th>
+                        <th class="text-end">Outstanding</th>
+                        <th class="text-center">Status</th>
+                        <th class="pe-4 text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loan in loans %}
+                    <tr>
+                        <td class="ps-4">
+                            <a href="{% url 'lending:loan_detail' loan.loan_id %}" class="font-monospace text-dark text-decoration-none fw-semibold">
+                                {{ loan.loan_id|stringformat:".8s" }}...
+                            </a>
+                        </td>
+                        <td class="text-end fw-semibold">₹{{ loan.principal|floatformat:2 }}</td>
+                        <td>{{ loan.interest_rate }}% {{ loan.get_interest_period_display }}</td>
+                        <td>{{ loan.get_interest_basis_display }}</td>
+                        <td>{{ loan.lending_date|date:"d M Y" }}</td>
+                        <td>{{ loan.due_date|date:"d M Y"|default:"—" }}</td>
+                        <td class="text-center">{% if loan.monthly_due_day %}Day {{ loan.monthly_due_day }}{% else %}—{% endif %}</td>
+                        <td class="text-end text-success">
+                            ₹{{ loan.principal_repaid|floatformat:2 }}
+                        </td>
+                        <td class="text-end fw-semibold">
+                            {% if loan.outstanding_principal > 0 %}
+                            <span class="text-danger">₹{{ loan.outstanding_principal|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="text-success">₹0.00</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if loan.status == "open" %}
+                            <span class="badge bg-success-subtle text-success">Open</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary">Closed</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end">
+                            <a href="{% url 'lending:loan_detail' loan.loan_id %}" class="btn btn-sm btn-outline-dark">
+                                View Loan
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-4 text-center">
+            <p class="lm-muted mb-3">No loans created for this borrower yet.</p>
+            <a href="{% url 'lending:add_loan' %}?borrower={{ borrower.pk }}" class="lm-btn-outline">
+                + Create First Loan
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Payment History Card -->
+    <div class="lm-card p-0 overflow-hidden">
+        <div class="p-4 pb-3">
+            <h2 class="lm-heading-sm mb-1">Payment History</h2>
+            <p class="lm-muted mb-0">All repayment transactions across all loans for this borrower.</p>
+        </div>
+
+        {% if payments %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Date</th>
+                        <th>Loan Reference</th>
+                        <th class="text-end">Total Payment</th>
+                        <th class="text-end">Principal Component</th>
+                        <th class="text-end">Interest Component</th>
+                        <th class="pe-4">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td class="ps-4">{{ payment.payment_date|date:"d M Y" }}</td>
+                        <td>
+                            <a href="{% url 'lending:loan_detail' payment.loan.loan_id %}" class="font-monospace text-dark text-decoration-none">
+                                {{ payment.loan.loan_id|stringformat:".8s" }}...
+                            </a>
+                        </td>
+                        <td class="text-end fw-semibold">₹{{ payment.amount|floatformat:2 }}</td>
+                        <td class="text-end text-success">₹{{ payment.principal_component|floatformat:2 }}</td>
+                        <td class="text-end text-primary">₹{{ payment.interest_component|floatformat:2 }}</td>
+                        <td class="pe-4">{{ payment.notes|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="py-4 text-center">
+            <p class="lm-muted mb-0">No repayments recorded for this borrower yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Modal: Create Tracker Choice (Option A: Custom vs Option B: Automatic Monthly) -->
+<div class="modal fade" id="createTrackerModal" tabindex="-1" aria-labelledby="createTrackerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title" id="createTrackerModalLabel">Create a Tracker</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Nav Tabs for Option A vs Option B -->
+                <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-2 border" id="trackerChoiceTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-medium py-2" id="auto-tracker-tab" data-bs-toggle="pill" data-bs-target="#auto-tracker-pane" type="button" role="tab" aria-controls="auto-tracker-pane" aria-selected="true">
+                            Option B: Automatic Monthly Tracker
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-medium py-2" id="custom-tracker-tab" data-bs-toggle="pill" data-bs-target="#custom-tracker-pane" type="button" role="tab" aria-controls="custom-tracker-pane" aria-selected="false">
+                            Option A: Custom Tracker
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="trackerChoiceTabContent">
+                    <!-- Tab Pane B: Automatic Monthly Tracker -->
+                    <div class="tab-pane fade show active" id="auto-tracker-pane" role="tabpanel" aria-labelledby="auto-tracker-tab">
+                        <p class="lm-muted small mb-3">
+                            Automatically generates monthly tracking entries covering the entire period from the loan's <strong>lending date</strong> to its <strong>expected return date</strong>.
+                        </p>
+
+                        {% if loans %}
+                        <form method="post" action="{% url 'lending:create_automatic_tracker' borrower.pk %}">
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label class="lm-label" for="autoTrackerLoanSelect">Select Loan *</label>
+                                <select name="loan" id="autoTrackerLoanSelect" class="form-select" required>
+                                    <option value="" selected disabled>Choose a loan for this borrower...</option>
+                                    {% for loan in loans %}
+                                    <option value="{{ loan.pk }}"
+                                            data-principal="{{ loan.principal|floatformat:2 }}"
+                                            data-lending="{{ loan.lending_date|date:'d M Y' }}"
+                                            data-due="{{ loan.due_date|date:'d M Y'|default:'' }}"
+                                            data-has-due="{% if loan.due_date %}1{% else %}0{% endif %}"
+                                            data-status="{{ loan.get_status_display }}">
+                                        Loan #{{ loan.loan_id|stringformat:".8s" }} – ₹{{ loan.principal|floatformat:2 }}
+                                        {% if loan.due_date %}(Return Date: {{ loan.due_date|date:"d M Y" }}){% else %}(No Return Date Set){% endif %}
+                                        [{{ loan.get_status_display }}]
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Dynamic Loan Details Preview -->
+                            <div id="loanDetailsPreview" class="p-3 bg-light rounded-2 border mb-3 d-none">
+                                <div class="row g-2 small">
+                                    <div class="col-sm-6">
+                                        <span class="text-muted">Lending Date:</span>
+                                        <strong id="previewLendingDate">—</strong>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <span class="text-muted">Expected Return Date:</span>
+                                        <strong id="previewDueDate">—</strong>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <span class="text-muted">Principal:</span>
+                                        <strong id="previewPrincipal">—</strong>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <span class="text-muted">Loan Status:</span>
+                                        <strong id="previewStatus">—</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Missing Due Date Warning (Hidden by default) -->
+                            <div id="missingDueDateAlert" class="alert alert-warning py-2 px-3 small mb-3 d-none">
+                                <strong>Expected Return Date Required:</strong> This loan does not have an expected return date (due date) set. Please edit the loan and specify a return date before generating an automatic tracker.
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="lm-label" for="autoTrackerTitle">Tracker Title (Optional)</label>
+                                <input type="text" name="title" id="autoTrackerTitle" class="form-control" placeholder="Leave empty for auto-generated title (e.g. Monthly Tracker – Loan #...)">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="lm-label" for="autoTrackerDesc">Description (Optional)</label>
+                                <textarea name="description" id="autoTrackerDesc" class="form-control" rows="2" placeholder="Optional notes about this automatic monthly tracker..."></textarea>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" id="submitAutoTrackerBtn" class="lm-btn-primary">Generate Monthly Tracker</button>
+                            </div>
+                        </form>
+                        {% else %}
+                        <div class="p-4 bg-light rounded-2 text-center">
+                            <p class="lm-muted mb-3">This borrower has no loans yet. Add a loan first to create an automatic monthly tracker.</p>
+                            <a href="{% url 'lending:add_loan' %}?borrower={{ borrower.pk }}" class="lm-btn-primary btn-sm">
+                                + Add Loan
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tab Pane A: Custom Tracker -->
+                    <div class="tab-pane fade" id="custom-tracker-pane" role="tabpanel" aria-labelledby="custom-tracker-tab">
+                        <p class="lm-muted small mb-3">
+                            Create an open-ended custom checklist for personal follow-ups, document collections, or task lists.
+                        </p>
+
+                        <form method="post" action="{% url 'lending:create_tracker' borrower.pk %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="lm-label">Tracker Title *</label>
+                                <input type="text" name="title" class="form-control" placeholder="e.g. Document Collection, Follow-up Checklist..." required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="lm-label">Description (Optional)</label>
+                                <textarea name="description" class="form-control" rows="2" placeholder="Optional notes regarding this custom tracker..."></textarea>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="lm-btn-primary">Create Custom Tracker</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Dynamic loan details preview in Automatic Tracker creation
+    const loanSelect = document.getElementById("autoTrackerLoanSelect");
+    const previewBox = document.getElementById("loanDetailsPreview");
+    const warningBox = document.getElementById("missingDueDateAlert");
+    const submitBtn = document.getElementById("submitAutoTrackerBtn");
+
+    if (loanSelect) {
+        loanSelect.addEventListener("change", function () {
+            const selected = loanSelect.options[loanSelect.selectedIndex];
+            if (!selected || !selected.value) {
+                previewBox.classList.add("d-none");
+                warningBox.classList.add("d-none");
+                if (submitBtn) submitBtn.disabled = false;
+                return;
+            }
+
+            const principal = selected.getAttribute("data-principal");
+            const lending = selected.getAttribute("data-lending");
+            const due = selected.getAttribute("data-due");
+            const hasDue = selected.getAttribute("data-has-due") === "1";
+            const status = selected.getAttribute("data-status");
+
+            document.getElementById("previewPrincipal").textContent = "₹" + principal;
+            document.getElementById("previewLendingDate").textContent = lending;
+            document.getElementById("previewDueDate").textContent = due || "Not set";
+            document.getElementById("previewStatus").textContent = status;
+
+            previewBox.classList.remove("d-none");
+
+            if (!hasDue) {
+                warningBox.classList.remove("d-none");
+                if (submitBtn) submitBtn.disabled = true;
+            } else {
+                warningBox.classList.add("d-none");
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // Toggle custom months input in Extend Tracker modals
+    document.querySelectorAll(".extension-preset-select").forEach(function (selectElem) {
+        selectElem.addEventListener("change", function () {
+            const targetId = selectElem.getAttribute("data-target");
+            const targetElem = document.getElementById(targetId);
+            if (targetElem) {
+                if (selectElem.value === "custom") {
+                    targetElem.classList.remove("d-none");
+                    const input = targetElem.querySelector("input");
+                    if (input) input.required = true;
+                } else {
+                    targetElem.classList.add("d-none");
+                    const input = targetElem.querySelector("input");
+                    if (input) input.required = false;
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

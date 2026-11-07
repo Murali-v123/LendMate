@@ -1,0 +1,7 @@
+{% if messages %}
+<div class="lm-messages">
+  {% for message in messages %}
+    <div class="lm-alert lm-alert-{{ message.tags|default:'info' }}" role="status">{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}

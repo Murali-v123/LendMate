@@ -1,0 +1,6 @@
+{% with current=request.resolver_match.url_name app=request.resolver_match.app_name %}
+<a class="lm-nav-link{% if current == 'dashboard' %} is-active{% endif %}" href="{% url 'core:dashboard' %}"{% if current == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+<a class="lm-nav-link{% if app == 'lending' %} is-active{% endif %}" href="{% url 'lending:borrower_list' %}"{% if app == 'lending' %} aria-current="page"{% endif %}>Borrowers</a>
+<a class="lm-nav-link{% if app == 'notifications' %} is-active{% endif %}" href="{% url 'notifications:history' %}"{% if app == 'notifications' %} aria-current="page"{% endif %}>Notifications</a>
+<a class="lm-nav-link{% if current == 'settings' or app == 'accounts' %} is-active{% endif %}" href="{% url 'core:settings' %}"{% if current == 'settings' %} aria-current="page"{% endif %}>Settings</a>
+{% endwith %}

@@ -1,0 +1,209 @@
+{% extends "layouts/app.html" %}
+{% block title %}WhatsApp Notifications · LendMate{% endblock %}
+{% block content %}
+
+<header class="lm-page-header">
+  <p class="lm-eyebrow">Communications</p>
+  <h1 class="lm-display">WhatsApp Notifications</h1>
+  <p class="lm-lead">Track all outbound WhatsApp notifications dispatched to your borrowers via Meta WhatsApp Business Platform.</p>
+</header>
+
+{# --- Filter tabs --- #}
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <a href="?status=all" class="lm-filter-tab {% if status_filter == 'all' %}is-active{% endif %}">
+    All <span class="lm-badge">{{ counts.all }}</span>
+  </a>
+  <a href="?status=mocked" class="lm-filter-tab {% if status_filter == 'mocked' %}is-active{% endif %}">
+    Mocked <span class="lm-badge" style="background: rgba(13, 110, 253, 0.1); color: #0d6efd;">{{ counts.mocked }}</span>
+  </a>
+  <a href="?status=submitted" class="lm-filter-tab {% if status_filter == 'submitted' %}is-active{% endif %}">
+    Submitted <span class="lm-badge" style="background: rgba(13, 202, 240, 0.15); color: #055160;">{{ counts.submitted }}</span>
+  </a>
+  <a href="?status=delivered" class="lm-filter-tab {% if status_filter == 'delivered' %}is-active{% endif %}">
+    Delivered <span class="lm-badge lm-badge-success">{{ counts.delivered }}</span>
+  </a>
+  <a href="?status=pending" class="lm-filter-tab {% if status_filter == 'pending' %}is-active{% endif %}">
+    Pending <span class="lm-badge lm-badge-warning">{{ counts.pending }}</span>
+  </a>
+  <a href="?status=failed" class="lm-filter-tab {% if status_filter == 'failed' %}is-active{% endif %}">
+    Failed <span class="lm-badge lm-badge-danger">{{ counts.failed }}</span>
+  </a>
+  <a href="?status=suppressed" class="lm-filter-tab {% if status_filter == 'suppressed' %}is-active{% endif %}">
+    Suppressed <span class="lm-badge">{{ counts.suppressed }}</span>
+  </a>
+</div>
+
+{% if page_obj.object_list %}
+<section class="lm-card p-0 overflow-hidden">
+  <div class="table-responsive">
+    <table class="table lm-table mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Borrower</th>
+          <th>WhatsApp Recipient</th>
+          <th>Type</th>
+          <th>Loan</th>
+          <th>Message Preview</th>
+          <th>Created</th>
+          <th>Status</th>
+          <th class="text-center">Attempts</th>
+          <th>Details</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for notif in page_obj %}
+        <tr>
+          <td>
+            {% if notif.borrower %}
+              <a href="{% url 'lending:borrower_detail' pk=notif.borrower.pk %}" class="lm-link fw-medium">
+                {{ notif.borrower.full_name }}
+              </a>
+            {% else %}
+              <span class="lm-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="lm-mono small">
+            {% with n=notif.recipient_number %}
+              {% if n %}
+                {{ n|slice:":4" }}****{{ n|slice:"-4:" }}
+              {% else %}
+                <span class="lm-muted">—</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+          <td>
+            <span class="lm-type-badge">{{ notif.get_notification_type_display }}</span>
+          </td>
+          <td>
+            {% if notif.loan %}
+              <a href="{% url 'lending:loan_detail' loan_id=notif.loan.loan_id %}" class="lm-link lm-mono small">
+                #{{ notif.loan.loan_id|slice:":8" }}
+              </a>
+            {% else %}
+              <span class="lm-muted">—</span>
+            {% endif %}
+          </td>
+          <td style="max-width: 260px;">
+            {% if notif.message %}
+              <div class="text-truncate small text-secondary" title="{{ notif.message }}" style="max-width: 250px;">
+                {{ notif.message }}
+              </div>
+            {% else %}
+              <span class="lm-muted small">—</span>
+            {% endif %}
+          </td>
+          <td class="text-nowrap small">
+            <div>{{ notif.created_at|date:"d M Y" }}</div>
+            <div class="lm-muted" style="font-size: 0.75rem;">{{ notif.created_at|date:"H:i" }}</div>
+          </td>
+          <td>
+            {% if notif.status == 'mocked' %}
+              <span class="badge text-bg-light border text-primary-emphasis fw-semibold">
+                Mocked – Not Transmitted
+              </span>
+            {% elif notif.status == 'submitted' %}
+              {% if notif.channel == 'sms' %}
+                <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle fw-semibold">
+                  Sent via SMS (historical)
+                </span>
+              {% else %}
+                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle fw-semibold">
+                  Submitted to WhatsApp
+                </span>
+              {% endif %}
+            {% elif notif.status == 'delivered' %}
+              <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle fw-semibold">
+                Delivered
+              </span>
+            {% elif notif.status == 'pending' %}
+              <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold">
+                Pending
+              </span>
+            {% elif notif.status == 'processing' %}
+              <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle fw-semibold">
+                Processing
+              </span>
+            {% elif notif.status == 'failed' %}
+              <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle fw-semibold">
+                Failed
+              </span>
+            {% elif notif.status == 'suppressed' %}
+              <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle fw-semibold">
+                Suppressed
+              </span>
+            {% else %}
+              <span class="badge text-bg-light">{{ notif.status }}</span>
+            {% endif %}
+          </td>
+          <td class="text-center small">{{ notif.attempts }}</td>
+          <td class="small" style="max-width: 220px;">
+            {% if notif.last_error %}
+              <span class="text-danger-emphasis d-inline-block text-truncate" style="max-width: 200px;" title="{{ notif.last_error }}">
+                {{ notif.last_error }}
+              </span>
+            {% elif notif.status == 'mocked' and notif.processed_at %}
+              <span class="lm-muted">Simulated {{ notif.processed_at|date:"d M H:i" }}</span>
+            {% elif notif.sent_at and notif.status in 'submitted,delivered' %}
+              {% if notif.channel == 'sms' %}
+                <span class="lm-muted">Sent via SMS {{ notif.sent_at|date:"d M H:i" }}</span>
+              {% else %}
+                <span class="lm-muted">Submitted {{ notif.sent_at|date:"d M H:i" }}</span>
+              {% endif %}
+            {% elif notif.status == 'suppressed' %}
+              <span class="lm-muted">Consent or preferences off</span>
+            {% else %}
+              <span class="lm-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if notif.status == 'failed' and notif.attempts < 5 %}
+              <form method="post" action="{% url 'notifications:retry' pk=notif.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="lm-btn-sm-outline" title="Retry sending this notification">
+                  Retry
+                </button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{# --- Pagination --- #}
+{% if page_obj.has_other_pages %}
+<nav class="d-flex justify-content-center mt-4" aria-label="Notifications pages">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?status={{ status_filter }}&page={{ page_obj.previous_page_number }}">Previous</a>
+      </li>
+    {% endif %}
+    <li class="page-item disabled">
+      <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    </li>
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?status={{ status_filter }}&page={{ page_obj.next_page_number }}">Next</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="lm-card lm-empty p-5 text-center">
+  <p class="lm-muted mb-0">
+    {% if status_filter == 'all' %}
+      No WhatsApp notifications have been queued yet.
+    {% else %}
+      No {{ status_filter }} notifications found.
+    {% endif %}
+  </p>
+</div>
+{% endif %}
+
+{% endblock %}

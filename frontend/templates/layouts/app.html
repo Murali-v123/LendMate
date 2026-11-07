@@ -1,0 +1,65 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% block body %}
+<div class="lm-shell">
+  <aside class="lm-sidebar d-none d-lg-flex flex-column" aria-label="Sidebar">
+    <a href="{% url 'core:dashboard' %}" class="lm-brand">
+      <img src="{% static 'img/lendmate-mark.svg' %}" alt="" width="36" height="36">
+      <span class="lm-wordmark">LendMate</span>
+    </a>
+    <nav class="lm-nav" aria-label="Main">
+      {% include "partials/nav_links.html" %}
+    </nav>
+    <div class="lm-sidebar-footer">
+      <div class="lm-user-name">{{ request.user.get_full_name|default:request.user.get_username }}</div>
+      <div class="lm-user-email">{{ request.user.email }}</div>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="lm-link-button">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="lm-main">
+    <header class="lm-topbar d-lg-none">
+      <a href="{% url 'core:dashboard' %}" class="lm-brand">
+        <img src="{% static 'img/lendmate-mark.svg' %}" alt="" width="32" height="32">
+        <span class="lm-wordmark">LendMate</span>
+      </a>
+      <button class="lm-icon-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#lmMobileNav" aria-controls="lmMobileNav" aria-label="Open navigation menu">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <main class="lm-content">
+      {% include "partials/messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<div class="offcanvas offcanvas-start lm-offcanvas" tabindex="-1" id="lmMobileNav" aria-labelledby="lmMobileNavLabel">
+  <div class="offcanvas-header">
+    <span class="lm-brand" id="lmMobileNavLabel">
+      <img src="{% static 'img/lendmate-mark.svg' %}" alt="" width="32" height="32">
+      <span class="lm-wordmark">LendMate</span>
+    </span>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close menu"></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column">
+    <nav class="lm-nav" aria-label="Mobile">
+      {% include "partials/nav_links.html" %}
+    </nav>
+    <div class="lm-sidebar-footer">
+      <div class="lm-user-name">{{ request.user.get_full_name|default:request.user.get_username }}</div>
+      <div class="lm-user-email">{{ request.user.email }}</div>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="lm-link-button">Sign out</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

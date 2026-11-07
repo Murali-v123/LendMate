@@ -1,0 +1,162 @@
+{% extends "layouts/app.html" %}
+{% block title %}Settings · LendMate{% endblock %}
+{% block content %}
+<header class="lm-page-header">
+  <p class="lm-eyebrow">Account</p>
+  <h1 class="lm-display">Settings</h1>
+</header>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <section class="lm-card">
+      <h2 class="lm-heading-sm mb-1">Lender profile</h2>
+      <p class="lm-muted mb-4">Manage your personal details and account information.</p>
+
+      <form method="post" action="{% url 'core:settings' %}" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="profile">
+
+        {% if profile_form.non_field_errors %}
+          {% for error in profile_form.non_field_errors %}
+            <div class="lm-alert lm-alert-error" role="alert">{{ error }}</div>
+          {% endfor %}
+        {% endif %}
+
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="lm-label" for="{{ profile_form.first_name.id_for_label }}">First name</label>
+            {{ profile_form.first_name }}
+            {% for error in profile_form.first_name.errors %}
+              <div class="lm-field-error">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <div class="col-sm-6">
+            <label class="lm-label" for="{{ profile_form.last_name.id_for_label }}">Last name</label>
+            {{ profile_form.last_name }}
+            {% for error in profile_form.last_name.errors %}
+              <div class="lm-field-error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="lm-label" for="{{ profile_form.email.id_for_label }}">Email address</label>
+          {{ profile_form.email }}
+          {% for error in profile_form.email.errors %}
+            <div class="lm-field-error">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="mb-3">
+          <label class="lm-label" for="settings-username">Username</label>
+          <input type="text" id="settings-username" class="form-control" value="{{ request.user.get_username }}" readonly tabindex="-1" aria-readonly="true">
+          <div class="lm-help">Username cannot be changed.</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="lm-label" for="settings-member-since">Member since</label>
+          <input type="text" id="settings-member-since" class="form-control" value="{{ request.user.date_joined|date:'j F Y' }}" readonly tabindex="-1" aria-readonly="true">
+        </div>
+
+        <button type="submit" class="lm-btn-primary">Save Profile</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="col-lg-5 d-flex flex-column gap-4">
+    <section class="lm-card">
+      <h2 class="lm-heading-sm mb-1">Notification preferences</h2>
+      <p class="lm-muted mb-4">Choose which notifications and reminders you receive.</p>
+
+      <form method="post" action="{% url 'core:settings' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="preferences">
+
+        {% if preferences_form.non_field_errors %}
+          {% for error in preferences_form.non_field_errors %}
+            <div class="lm-alert lm-alert-error" role="alert">{{ error }}</div>
+          {% endfor %}
+        {% endif %}
+
+        {# --- General reminders --- #}
+        <p class="lm-eyebrow mb-2">General</p>
+
+        <div class="form-check mb-3">
+          {{ preferences_form.payment_reminders }}
+          <label class="form-check-label fw-medium" for="{{ preferences_form.payment_reminders.id_for_label }}">
+            Payment Reminders
+          </label>
+          <div class="lm-help">Enable or disable payment reminders.</div>
+        </div>
+
+        <div class="form-check mb-4">
+          {{ preferences_form.due_date_reminders }}
+          <label class="form-check-label fw-medium" for="{{ preferences_form.due_date_reminders.id_for_label }}">
+            Due-Date Reminders
+          </label>
+          <div class="lm-help">Enable or disable due-date reminders.</div>
+        </div>
+
+        <hr class="lm-divider">
+
+        {# --- WhatsApp notifications --- #}
+        <p class="lm-eyebrow mb-2">WhatsApp Notifications</p>
+        <div class="lm-info-box mb-3">
+          <strong>Important:</strong> WhatsApp notifications use the official Meta WhatsApp Business Platform (Cloud API).
+          In development, the mock backend simulates dispatch and marks messages as <em>Mocked – Not Transmitted</em>.
+          Borrowers must explicitly consent to WhatsApp notifications before any message can be dispatched.
+        </div>
+
+        <div class="form-check mb-3">
+          {{ preferences_form.whatsapp_notifications_enabled }}
+          <label class="form-check-label fw-medium" for="{{ preferences_form.whatsapp_notifications_enabled.id_for_label }}">
+            Enable WhatsApp Notifications (Master Switch)
+          </label>
+          <div class="lm-help">{{ preferences_form.whatsapp_notifications_enabled.help_text }}</div>
+        </div>
+
+        <div class="ms-3 border-start ps-3" style="border-color: var(--lm-border) !important;">
+          <div class="form-check mb-2">
+            {{ preferences_form.whatsapp_loan_created }}
+            <label class="form-check-label" for="{{ preferences_form.whatsapp_loan_created.id_for_label }}">
+              {{ preferences_form.whatsapp_loan_created.label }}
+            </label>
+          </div>
+          <div class="form-check mb-2">
+            {{ preferences_form.whatsapp_payment_received }}
+            <label class="form-check-label" for="{{ preferences_form.whatsapp_payment_received.id_for_label }}">
+              {{ preferences_form.whatsapp_payment_received.label }}
+            </label>
+          </div>
+          <div class="form-check mb-2">
+            {{ preferences_form.whatsapp_monthly_reminders }}
+            <label class="form-check-label" for="{{ preferences_form.whatsapp_monthly_reminders.id_for_label }}">
+              {{ preferences_form.whatsapp_monthly_reminders.label }}
+            </label>
+          </div>
+          <div class="form-check mb-2">
+            {{ preferences_form.whatsapp_overdue_reminders }}
+            <label class="form-check-label" for="{{ preferences_form.whatsapp_overdue_reminders.id_for_label }}">
+              {{ preferences_form.whatsapp_overdue_reminders.label }}
+            </label>
+          </div>
+          <div class="form-check mb-3">
+            {{ preferences_form.whatsapp_loan_closed }}
+            <label class="form-check-label" for="{{ preferences_form.whatsapp_loan_closed.id_for_label }}">
+              {{ preferences_form.whatsapp_loan_closed.label }}
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="lm-btn-primary">Save Preferences</button>
+      </form>
+    </section>
+
+    <section class="lm-card">
+      <h2 class="lm-heading-sm mb-3">Security</h2>
+      <p class="lm-muted">Choose a new password for your account. Your current session stays signed in.</p>
+      <a href="{% url 'accounts:password_change' %}" class="lm-btn-outline">Change password</a>
+    </section>
+  </div>
+</div>
+{% endblock %}

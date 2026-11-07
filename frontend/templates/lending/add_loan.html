@@ -1,0 +1,109 @@
+{% extends "layouts/app.html" %}
+
+{% block content %}
+
+<div class="container-fluid px-0">
+
+    <div class="mb-4">
+        <p class="text-uppercase small text-muted mb-2">
+            LendMate / Loans
+        </p>
+        <h1 class="h2 mb-2">Create a new loan</h1>
+        <p class="text-muted">
+            Record the lending amount and interest details.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4" style="max-width: 760px;">
+        <div class="card-body p-4 p-md-5">
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label class="form-label">Select borrower</label>
+                    {{ form.borrower }}
+                    {{ form.borrower.errors }}
+                </div>
+
+                <hr class="my-4">
+
+                <h5 class="mb-3">Loan details</h5>
+
+                <div class="mb-4">
+                    <label class="form-label">Principal amount (₹)</label>
+                    {{ form.principal }}
+                    {{ form.principal.errors }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Interest rate (%)</label>
+                    {{ form.interest_rate }}
+                    {{ form.interest_rate.errors }}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label">Interest period</label>
+                        {{ form.interest_period }}
+                        {{ form.interest_period.errors }}
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label">Interest calculation</label>
+                        {{ form.interest_basis }}
+                        {{ form.interest_basis.errors }}
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <h5 class="mb-3">Dates and schedule</h5>
+
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label">Lending date</label>
+                        {{ form.lending_date }}
+                        {{ form.lending_date.errors }}
+                    </div>
+
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label">Final due date (Optional)</label>
+                        {{ form.due_date }}
+                        {{ form.due_date.errors }}
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Monthly due day (Optional)</label>
+                    {{ form.monthly_due_day }}
+                    <div class="form-text">
+                        Example: Enter 5 if interest is due on the 5th of each month.
+                    </div>
+                    {{ form.monthly_due_day.errors }}
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Additional notes (Optional)</label>
+                    {{ form.notes }}
+                    {{ form.notes.errors }}
+                </div>
+
+                <div class="d-flex gap-3 flex-wrap">
+                    <button type="submit" class="btn btn-dark px-4">
+                        Create loan
+                    </button>
+
+                    <a href="{% url 'lending:borrower_list' %}" class="btn btn-outline-secondary px-4">
+                        Cancel
+                    </a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

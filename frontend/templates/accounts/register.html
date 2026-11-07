@@ -1,0 +1,12 @@
+{% extends "layouts/auth.html" %}
+{% block title %}Create account · LendMate{% endblock %}
+{% block content %}
+<p class="lm-eyebrow">For lenders</p>
+<h1 class="lm-heading-md">Create your ledger</h1>
+<form method="post" action="{% url 'accounts:register' %}">
+  {% csrf_token %}
+  {% include "partials/form_fields.html" %}
+  <button type="submit" class="lm-btn-primary lm-btn-block mt-2">Create account</button>
+</form>
+<p class="lm-auth-footer">Already registered? <a class="lm-link" href="{% url 'accounts:login' %}">Sign in</a></p>
+{% endblock %}

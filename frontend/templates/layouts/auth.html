@@ -1,0 +1,18 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% block body %}
+<div class="lm-auth">
+  <div class="lm-auth-inner">
+    <div class="lm-auth-brand">
+      <span class="lm-brand">
+        <img src="{% static 'img/lendmate-mark.svg' %}" alt="" width="40" height="40">
+        <span class="lm-wordmark" style="font-size:1.6rem">LendMate</span>
+      </span>
+    </div>
+    <div class="lm-card lm-auth-card">
+      {% include "partials/messages.html" %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}

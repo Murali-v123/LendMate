@@ -1,0 +1,39 @@
+# Environment files (exclude secret envs, preserve example template)
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+venv/
+.venv/
+
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Static files collected for production
+staticfiles/
+
+# Database dumps and local SQLite
+*.sqlite3
+db.sqlite3
+backups/
+*.sql
+
+# System and editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Logs and runtime artifacts
+*.log
+logs/
+celerybeat-schedule
+celerybeat-schedule.*
+*.pid
+
+# Temporary and packaging files
+*.tmp
+*.zip
